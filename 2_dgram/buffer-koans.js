@@ -29,22 +29,22 @@ util.inherits(RTPProtocol, events.EventEmitter);
 RTPProtocol.prototype.pack = function(payload){
 
 		++this.seqNum;
-		
-		// RFC3550 says it must increase by the number of samples 
+
+		// RFC3550 says it must increase by the number of samples
 		// sent in a block in case of CBR audio streaming
 		this.timestamp += TIMESTAMP_DELTA;
 
 		if (!payload) {
-			// Tried to send a packet, but packet was not ready. 
-			// Timestamp and Sequence Number should be increased 
-			// anyway 'cause interval callback was called and 
+			// Tried to send a packet, but packet was not ready.
+			// Timestamp and Sequence Number should be increased
+			// anyway 'cause interval callback was called and
 			// that's like sending silence
 			this.setMarker = true;
 			return;
 		}
-		
+
 		var RTPPacket = new Buffer(RTP_HEADER_SIZE + RTP_FRAGMENTATION_HEADER_SIZE + payload.length);
-		
+
 		// version = 2:        10
 		// padding = 0:          0
 		// extension = 0:         0
@@ -53,45 +53,45 @@ RTPProtocol.prototype.pack = function(payload){
     KOAN #1
     should write Version, Padding, Extension and Count
 */
-		RTPPacket.___(128, 0);
-		
+		RTPPacket.writeUInt8(128, 0);
+
 		// Marker = 0:                        0
 		// RFC 1890: RTP Profile for Audio and Video Conferences with Minimal Control
 		// Payload = 14: (MPEG Audio Only)     0001110
 		RTPPacket.writeUInt8(this.setMarker? 142 : 14, 1);
 		this.setMarker = false;
-		
+
 		// SequenceNumber
 /*
     KOAN #2
     should write Sequence Number
 */
-		RTPPacket.___(this.seqNum, 2);
-		
+		RTPPacket.writeUInt16BE(this.seqNum, 2);
+
 		// Timestamp
 /*
     KOAN #3
     should write Timestamp...
 */
-		RTPPacket.___(this.timestamp, 4);
-		
+		RTPPacket.writeUInt32BE(this.timestamp, 4);
+
 		// SSRC
 /*
     KOAN #3
     ...SSRC and...
 */
-		RTPPacket.___(this.ssrc, 8);
-		
+		RTPPacket.writeUInt32BE(this.ssrc, 8);
+
 		// RFC 2250: RTP Payload Format for MPEG1/MPEG2 Video
 		// 3.5 MPEG Audio-specific header
 /*
     KOAN #3
     ...payload Format
 */
-		RTPPacket.___(0, 12);
+		RTPPacket.writeUInt32BE(0, 12);
 
 		payload.copy(RTPPacket, 16);
-		
+
 		this.emit('packet', RTPPacket);
 		//return RTPPacket;
 };

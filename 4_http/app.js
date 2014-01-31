@@ -3,7 +3,7 @@ var	RTPProtocol = require('simpleRTP'),
 	udp = require('dgram'),
     nodeMp3 = require('NMp3');
 
-var PORT = 8080;
+var PORT = 8000;
 var GROUP = "224.0.0.114";
 
 var library = new nodeMp3.Mp3Library({ basedir: '../data/songs/' });
@@ -26,7 +26,7 @@ library.on("ready", function(trackList){
 	rtpprotocol.on('packet', function(packet){
 		udpSocket.send(packet, 0, packet.length, 5002, GROUP);
 	});
-	
+
 	listServer.listen(PORT, function(){
         console.log("Listening in...", PORT);
         console.log("Sessions for", GROUP);

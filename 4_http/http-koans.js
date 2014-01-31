@@ -1,6 +1,6 @@
-var http = require('http'), 
-	url = require('url'), 
-	fs = require('fs'), 
+var http = require('http'),
+	url = require('url'),
+	fs = require('fs'),
 	querystring = require('querystring');
 
 var listServer = http.createServer();
@@ -8,14 +8,14 @@ var listServer = http.createServer();
     KOAN #1
     should make the server to response incoming requests
 */
-listServer.on(___, function(req, res){
+listServer.on('request', function(req, res){
 
 	var self = this;
 /*
     KOAN #2
     should make the server to properly read the requests headers
-*/	
-	var credentials = req.___["authorization"];
+*/
+	var credentials = req.headers["authorization"];
 	var userAndPass, broadcastIp, pass;
 	if (credentials){
 		userAndPass = new Buffer(credentials.split(' ')[1], 'base64').toString('ascii').split(':');
@@ -32,13 +32,13 @@ listServer.on(___, function(req, res){
 /*
     KOAN #3
     should make the server to use url module
-*/	
-	var uri = url.___(req.url);
+*/
+	var uri = url.parse(req.url);
 /*
     KOAN #4
     should make the server to identify the request method
 */
-	switch(req.___){
+	switch(req.method){
 		case 'GET':
 			var path = uri.pathname;
 			if ( path == '/' ){
@@ -51,14 +51,14 @@ listServer.on(___, function(req, res){
 						res.end();
 						return;
 					}
-					
+
 					var fileExtension = path.substr(path.lastIndexOf(".") + 1);
 					var mimeType = MIME_TYPES[fileExtension];
 /*
     KOAN #5
     should make the server to include new header in implicit requests
 */
-					res.___("Content-Type", mimeType);
+					res.setHeader("Content-Type", mimeType);
 					if (mimeType.indexOf("text/") >= 0){
 						res.setHeader("Content-Encoding", "utf-8");
 					}
@@ -68,23 +68,23 @@ listServer.on(___, function(req, res){
 				});
 			}
 			break;
-		
+
 		case 'POST':
 			req.setEncoding('utf8');
-			
+
 			var body = '';
 			req.on('data', function(data){
 				body += data;
-			})
-			
+			});
+
 			req.on('end', function(){
 /*
     KOAN #6
     should make the server to use querystring module
 */
-				var query = querystring.___(body);
+				var query = querystring.parse(body);
 				var action = query.action;
-				
+
 				var player = self.broadcastList[broadcastIp];
 				if (action in player) {
 					player[action](function(){
@@ -96,7 +96,7 @@ listServer.on(___, function(req, res){
                 }
 			});
 			break;
-		
+
 		default:
 			res.writeHead(501, "Not Implemented");
 			res.end();
@@ -112,16 +112,18 @@ var writeDocument = function(res, doc){
 		form += '<input type="submit" value="prev" name="action">';
 		form += doc.paused? '<input type="submit" value="play" name="action">' : '<input type="submit" value="pause" name="action">';
 		form += '<input type="submit" value="next" name="action"></form>';
-	
+
 	var trackList = doc.tracks;
-	
+
 	var list = "<ul>";
+
 	for(var i=0, l=trackList.length; i<l; i++){
 		var track = trackList[i];
 		list += ('<li' + (track == doc.currentTrack? ' class="currentTrack"' : '') + '>' + track + '</li>');
-	};
+	}
+
 	list += "</ul>";
-	
+
 	var content = head + info + form + list + tail;
 	res.writeHead(200, 'OK', {
 		"Content-type": "text/html",
@@ -129,22 +131,22 @@ var writeDocument = function(res, doc){
 	});
 	res.write(content);
 	res.end();
-}
+};
 
 var allowedList = {
 	"224.0.0.114": "password"
-}
+};
 
 var MIME_TYPES = {
 	"png" : "image/png",
 	"css" : "text/css",
 	"js" : "text/javascript",
 	"html" : "text/html"
-}
+};
 
 exports.create = function(db){
-	if (db == null) throw new Error('Database cannot be empty');
-	
+	if (db === null) throw new Error('Database cannot be empty');
+
 	listServer.broadcastList = db;
 	return listServer;
-}
+};

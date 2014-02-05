@@ -26,22 +26,22 @@ app.get('/', function(req, res){
 
 app.get('/:username', function(req, res){
 
-	var username = req.params('username');
+	var username = req.params.username;
 
 	models.Whizr.findOne({ username: username }, function(err, doc){
 
-		if (err || doc == null) {
+		if (err || doc === null) {
 			res.send('Not found', 404);
             return;
 		}
-		
+
 		models.Whiz.find( { author: username }, function(err, docs){
-			if (err || doc == null) {
+			if (err || doc === null) {
 				res.send('Not found', 404);
 			}
             res.render('home.html', {  name: doc.name, username: doc.username, whizs: docs, whizr: req.session.whizr } );
 		} ).sort({ date: -1 });
-		
+
 	});
 });
 
@@ -50,8 +50,8 @@ app.get('/:username/profilepic', function(req, res){
 
 		if(err){
             res.send('Not Found', 404);
-        };
-		
+        }
+
 		res.redirect("http://www.gravatar.com/avatar/" + doc.emailHash + "?s=100");
 	});
 });
@@ -63,29 +63,28 @@ app.get('/:username/profilepic', function(req, res){
 app.post('/login', function(req, res){
 
 	//In case we're logged in
-	if (req.session.whizr != undefined) {
+	if (req.session.whizr !== undefined) {
 		res.redirect('/' + req.session.whizr.username);
 	}
-	
+
 	models.Whizr.findOne( { username: req.param('username') }, function(err, doc){
 		if (err) {
 			res.send('Error', 500);
 		}
-
-		if ( doc.password == req.param('password') ) {
+		if ( doc && doc.password == req.param('password') ) {
 			req.session.whizr = doc;
 			res.redirect('/' + doc.username);
 		} else {
 			res.send('Unauthorized', 401);
-		};		
-	} )
+		}
+	});
 
 });
 
 // Filter to check authentication in routes that could need it
 var checkAuth = function(req, res, next){
 	req.session.whizr? next() : res.send('Unauthorized', 401);
-}
+};
 
 app.post('/logout', checkAuth, function(req, res){
 		var redirect = req.session.whizr.username;
@@ -103,21 +102,21 @@ app.post('/register', function(req, res){
 		res.redirect('/'); // error
         return;
 	}
-	
+
 	models.Whizr.findOne({ username: username }, function(err, doc){
-	
+
 		if (err) {
 			res.send('Error', 500);
             return;
 		}
-		
-		if (doc != null) {
+
+		if (doc !== null) {
 			//error, nombre ocupado
             return;
 		}
-		
+
 		var whizr = new models.Whizr();
-		
+
 		whizr.name = name;
 		whizr.username = username;
 		whizr.password = password;
@@ -126,14 +125,14 @@ app.post('/register', function(req, res){
 		hash.update(email);
 		whizr.emailHash = hash.digest('hex');
         whizr.newMentions = 0;
-		
+
 		whizr.save(function(err){
 			if (err) {
-    			res.send('Error', 500);
+				res.send('Error', 500);
                 return;
 			}
             req.session.whizr = whizr;
-   			res.redirect('/' + username);
+			res.redirect('/' + username);
 		});
 	});
 });
@@ -145,18 +144,18 @@ app.post('/register', function(req, res){
 
 app.post('/whizr', checkAuth, function(req, res){
 	var text = req.param('whiz');
-	
-	if ( text == null || text.length  == 0 || text.length >= 140) {
+
+	if ( text === null || text.length  === 0 || text.length >= 140) {
 		//send error PERO ESTE N0!
 		res.redirect('Error', 404);
         return;
 	}
-	
+
 	var whiz = new models.Whiz();
-	
+
 	whiz.text = text;
 	whiz.author = req.session.whizr.username;
-			
+
 	whiz.save(function(err){
 
 		if (err) {
@@ -172,13 +171,13 @@ app.post('/whizr', checkAuth, function(req, res){
 
 
 /**********************
- 	FOLLOW & UNFOLLOW *
+	FOLLOW & UNFOLLOW *
 ***********************/
 
 app.post('/follow', checkAuth, function(req, res){
 	var followTo = req.param('username');
-	
-	if (followTo.length == 0 || followTo == null || followTo == req.session.whizr.username){
+
+	if (followTo.length === 0 || followTo === null || followTo == req.session.whizr.username){
 		//send error
         return;
 	}
@@ -195,8 +194,8 @@ app.post('/follow', checkAuth, function(req, res){
 app.post('/unfollow', checkAuth, function(req, res){
 
 	var unfollow = req.param('username');
-	
-	if (unfollow.length == 0 || unfollow == null || unfollow == whizr){
+
+	if (unfollow.length === 0 || unfollow === null || unfollow == whizr){
 		//send error
         return;
 	}
@@ -206,7 +205,7 @@ app.post('/unfollow', checkAuth, function(req, res){
 			// updates the session avoiding query
             // the database to update session data
 			var following = req.session.whizr.following;
-			following.splice(following.indexOf(unfollow), 1);			
+			following.splice(following.indexOf(unfollow), 1);
 			res.redirect('/' + unfollow);
 		}
 	});
@@ -220,7 +219,7 @@ app.get('/:username/following', function(req, res){
     models.Whizr.findOne({username: req.param('username')}, function(err, doc){
 		if(err){
             res.send('Not Found', 404);
-        };
+        }
         res.send(200, { following: doc.following});
     });
 });

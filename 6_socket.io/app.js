@@ -1,7 +1,7 @@
 var express = require('express'),
 	http = require('http'),
 	topMemory = require('./socket.io-koans.js');
-	
+
 var app = express();
 app.configure(function(){
 	app.use(express.favicon());
@@ -10,5 +10,4 @@ app.configure(function(){
 });
 
 var server = http.createServer(app);
-
 topMemory.createGame(server).listen(5555);
